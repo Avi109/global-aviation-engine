@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airline Operations Dashboard</title>
+    <style>
+        :root { --primary: #dc2626; --primary-hover: #b91c1c; --bg: #0b0f19; --card-bg: #111827; --text: #f9fafb; --text-muted: #9ca3af; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 40px 20px; display: flex; justify-content: center; }
+        .wrapper { width: 100%; max-width: 800px; }
+        .nav-bar { background: var(--card-bg); padding: 15px 25px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border: 1px solid #374151; }
+        .nav-bar h1 { font-size: 18px; margin: 0; color: #f3f4f6; }
+        .logout-btn { background: #4b5563; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; background: #111827; padding: 6px; border-radius: 10px; border: 1px solid #374151; }
+        .tab-btn { flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-muted); font-weight: 600; cursor: pointer; border-radius: 8px; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        
+        .card { background: var(--card-bg); padding: 30px; border-radius: 16px; border: 1px solid #374151; display: none; }
+        .card.active { display: block; }
+        h2 { margin-top: 0; font-size: 22px; margin-bottom: 20px; border-bottom: 1px solid #374151; padding-bottom: 10px; color: #ef4444; }
+        
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px; color: var(--text-muted); }
+        input { width: 100%; padding: 12px; background: #0b0f19; border: 1px solid #374151; border-radius: 8px; color: white; font-size: 15px; box-sizing: border-box; }
+        input:focus { border-color: var(--primary); outline: none; }
+        button[type="submit"] { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; }
+        
+        .alert { padding: 12px 15px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; }
+        .alert-success { background: #065f46; color: #34d399; }
+        .alert-error { background: #991b1b; color: #f87171; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #374151; }
+        th { background: #1f2937; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        tr:hover { background: #1f2937; }
+        mark { background: #7f1d1d; color: #fca5a5; padding: 2px 6px; border-radius: 4px; }
+        
+        .back-bar { text-align: center; margin-top: 25px; }
+        .back-bar a { color: var(--text-muted); font-size: 13px; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="nav-bar">
+        <h1 id="adminWelcome">⚠️ Corporate Manifest Terminal</h1>
+        <button id="logoutBtn" class="logout-btn" style="display:none" onclick="triggerLogout()">Log Out</button>
+    </div>
+
+    <div class="tabs">
+        <button id="tab-log" class="tab-btn active" onclick="toggleTab('logCard', this)">Admin Login</button>
+        <button id="tab-reg" class="tab-btn" onclick="toggleTab('regCard', this)">Register Authorized Operator</button>
+        <button id="tab-dash" class="tab-btn" onclick="toggleTab('dashCard', this); loadMasterManifest()">Master Passenger Log</button>
+    </div>
+
+    <div id="logCard" class="card active">
+        <h2>Authorized Personnel Sign In</h2>
+        <form id="formLogin">
+            <div class="form-group"><label>Admin Username</label><input type="text" id="logUser" required></div>
+            <div class="form-group"><label>Password</label><input type="password" id="logPass" required></div>
+            <button type="submit">Verify Credentials</button>
+        </form>
+        <div id="logAlert" class="alert"></div>
+    </div>
+
+    <div id="regCard" class="card">
+        <h2>Register Authorized Operator</h2>
+        <form id="formRegister">
+            <div class="form-group"><label>Corporate Username</label><input type="text" id="regUser" required></div>
+            <div class="form-group"><label>Official Email</label><input type="email" id="regEmail" required></div>
+            <div class="form-group"><label>Password</label><input type="password" id="regPass" required></div>
+            <div class="form-group"><label style="color:#f87171">Required Administrative Authorization Key</label><input type="password" id="adminKey" placeholder="Enter security passphrase" required></div>
+            <button type="submit">Authorize Operator Row</button>
+        </form>
+        <div id="regAlert" class="alert"></div>
+    </div>
+
+    <div id="dashCard" class="card">
+        <h2>Global Master Passenger Manifest</h2>
+        <div style="overflow-x:auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Passenger</th>
+                        <th>Email Contact</th>
+                        <th>Flight</th>
+                        <th>Route</th>
+                        <th>Seat Allocation</th>
+                    </tr>
+                </thead>
+                <tbody id="adminManifestBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="back-bar">
+        <a href="/">➔ Back to Public Passenger Interface</a>
+    </div>
+</div>
+
+<script>
+    function toggleTab(cardId, element) {
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(cardId).classList.add('active');
+        element.classList.add('active');
+    }
+
+    async function evaluateAdminSession() {
+        const res = await fetch('/api/session');
+        const session = await res.json();
+        const welcome = document.getElementById('adminWelcome');
+        const logout = document.getElementById('logoutBtn');
+        if (session.logged_in && session.is_admin) {
+            welcome.innerText = `🚨 Operator: ${session.username}`;
+            logout.style.display = 'block';
+        } else {
+            welcome.innerText = `⚠️ Corporate Manifest Terminal`;
+            logout.style.display = 'none';
+        }
+    }
+
+    document.getElementById('formLogin').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alert = document.getElementById('logAlert');
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('logUser').value,
+                    password: document.getElementById('logPass').value
+                })
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.error);
+            if(!data.is_admin) throw new Error("Access Denied: Standard accounts do not have clearance here.");
+            
+            alert.className = "alert alert-success"; alert.style.display="block"; alert.innerText = "Access granted. Retrieving data grids...";
+            await evaluateAdminSession();
+            setTimeout(() => { toggleTab('dashCard', document.getElementById('tab-dash')); loadMasterManifest(); alert.style.display='none'; }, 1000);
+        } catch(err) { alert.className = "alert alert-error"; alert.style.display="block"; alert.innerText = err.message; }
+    });
+
+    document.getElementById('formRegister').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alert = document.getElementById('regAlert');
+        try {
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('regUser').value,
+                    email: document.getElementById('regEmail').value,
+                    password: document.getElementById('regPass').value,
+                    is_admin: true,
+                    admin_key: document.getElementById('adminKey').value
+                })
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.error);
+            alert.className = "alert alert-success"; alert.style.display="block"; alert.innerText = "New operator entry verified and logged successfully!";
+            document.getElementById('formRegister').reset();
+        } catch(err) { alert.className = "alert alert-error"; alert.style.display="block"; alert.innerText = err.message; }
+    });
+
+    async function loadMasterManifest() {
+        const tbody = document.getElementById('adminManifestBody');
+        try {
+            const res = await fetch('/api/admin/bookings');
+            if(!res.ok) throw new Error("Clearance failure.");
+            const data = await res.json();
+            tbody.innerHTML = "";
+            data.forEach(b => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${b.id}</td>
+                        <td><strong>${b.passenger}</strong></td>
+                        <td>${b.email}</td>
+                        <td>${b.flight}</td>
+                        <td>${b.route}</td>
+                        <td><mark>${b.seat}</mark></td>
+                    </tr>`;
+            });
+        } catch(err) { tbody.innerHTML = `<tr><td colspan="6" style="color:#ef4444;text-align:center;font-weight:600">⚠️ Administrative Authorization Required. Log in to access tables.</td></tr>`; }
+    }
+
+    async function triggerLogout() {
+        await fetch('/api/logout', { method: 'POST' });
+        await evaluateAdminSession();
+        toggleTab('logCard', document.getElementById('tab-log'));
+    }
+
+    evaluateAdminSession();
+</script>
+
+</body>
+</html>
